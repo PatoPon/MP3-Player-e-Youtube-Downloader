@@ -1,198 +1,197 @@
-import sys
-import os
-import vlc
+from designApp import Ui_MainWindow
+from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt5.QtWidgets import QMainWindow
+from logica import *
+import math
+import pygame  # Importe o Pygame
 import yt_dlp
 import threading
-from youtube_search import YoutubeSearch
-from PyQt5.QtWidgets import QInputDialog, QApplication, QWidget, QLabel, QPushButton, QFileDialog, QSlider, QVBoxLayout
-from PyQt5.QtGui import QIcon, QFont
-from PyQt5.QtCore import Qt, QTimer
 
-# Definir a aparência dos botões e rótulos
-def set_button_style(button):
-    button.setStyleSheet(
-        "QPushButton {"
-        "background-color: #2196F3;"
-        "border: none;"
-        "color: white;"
-        "padding: 10px 15px;"
-        "border-radius: 5px;"
-        "font-size: 16px;"
-        "}"
-        "QPushButton:hover {"
-        "background-color: #1976D2;"
-        "}"
-    )
 
-def set_label_style(label):
-    label.setAlignment(Qt.AlignCenter)
-    label.setFont(QFont("Arial", 14, QFont.Bold))
+class MySignals(QObject):
+    pronto_signal = pyqtSignal()
 
-# Inicializar a instância VLC e o reprodutor de mídia
-instancia = vlc.Instance("--no-video")
-player = instancia.media_player_new()
 
-# Inicializar a música como "hello.mp3"
-musica = "hello.mp3"
+class SuaJanelaPrincipal(QMainWindow):
+    def __init__(self):
+        super().__init__()
 
-# Função para tocar a música
-def tocarMusica(player, musica):
-    if os.path.exists(musica):
-        media = instancia.media_new(musica)
-        player.set_media(media)
-        player.play()
-        # Iniciar o temporizador para atualizar o slider
-        slider_timer.start(1000)  # Atualizar a cada segundo
-    else:
-        mensagem_erro = "O arquivo de música não foi encontrado."
-        print("Erro:", mensagem_erro)
+        # Crie uma instância da classe Ui_MainWindow
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
 
-# Função para parar a música
-def pararMusica(player):
-    player.stop()
-    # Parar o temporizador quando a música é parada
-    slider_timer.stop()
+        self.signals = MySignals()
 
-# Função para escolher uma música
-def escolherMusica():
-    global musica
-    file_path, _ = QFileDialog.getOpenFileName(None, "Escolher Música", "", "Arquivos MP3 (*.mp3)")
-    if file_path:
-        musica = file_path
+        self.playlist = []  # Inicialize a lista de reprodução
+        self.playlist_text = "Playlist vazia"
+        self.ui.progressoLabel.setText("Progresso")
+        self.indice_musica_atual = 0
 
-# Função para baixar uma música do YouTube
-def baixarMusica():
-    global musica
-    termo_pesquisa, _ = QInputDialog.getText(None, "Digite o termo de pesquisa", "Digite o nome da música ou artista:")
-    if termo_pesquisa:
-        percent_label.setText("Iniciando pesquisa...")
-        threading.Thread(target=procurarMusica, args=(termo_pesquisa,)).start()
+        self.SONG_END = pygame.USEREVENT
+        pygame.mixer.music.set_endevent(self.SONG_END)
 
-# Função para procurar música no YouTube
-def procurarMusica(termo_pesquisa):
-    search_results = YoutubeSearch(termo_pesquisa, max_results=1)
-    url = f"https://www.youtube.com{search_results.videos[0]['url_suffix']}"
-    downloadMusica(url)
+        # Agora você pode interagir com os elementos da interface
+        self.ui.botaoTocar.clicked.connect(self.tocarMusica)
+        self.ui.botaoParar.clicked.connect(self.pararMusica)
+        self.ui.botaoEscolher.clicked.connect(self.escolherMusica)
+        self.ui.botaoPular.clicked.connect(self.pularMusica)
+        self.ui.botaoAnterior.clicked.connect(self.anteriorMusicaMusica)
+        self.ui.botaoBaixar.clicked.connect(self.procurarMusica)
 
-# Função para fazer o download da música do YouTube
-def downloadMusica(url):
-    def progress_callback(status):
-        if status['status'] == 'downloading':
-            percent = status['_percent_str']
-            percent_label.setText(f"Baixando: {percent}")
-        elif status['status'] == 'finished':
-            percent_label.setText("Iniciando conversão...")
+        self.ui.listWidget.itemClicked.connect(self.iniciarMusicaClicada)
 
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'default_search': "ytsearch",
-        'progress_hooks': [progress_callback],
-        'outtmpl': '%(uploader)s - %(title)s.%(ext)s',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }],
-    }
+        self.timer = QtCore.QTimer(self)
+        self.timer.timeout.connect(lambda: self.ui.progressoLabel.setText(
+            "Progresso"))  # Conecte o slot de redefinição
+        self.timer.setSingleShot(True)
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
+        self.timerSlide = QtCore.QTimer(self)
+        self.timerSlide.start(1)
+        self.timerSlide.timeout.connect(self.atualizarSlider)
 
-        nome_webm = ydl.prepare_filename(ydl.extract_info(url))
-        nome_mp3 = nome_webm.replace(".webm", ".mp3")
+        self.signals.pronto_signal.connect(lambda:
+                                           self.timer.start(5000)
+                                           )
 
-        if not os.path.exists(nome_webm):
-            global musica
-            percent_label.setText("O arquivo está pronto!")
-            musica = nome_mp3
+    def tocarMusica(self):
+        if not pygame.mixer.music.get_busy():
+            if pygame.mixer.music.get_pos() > 0:
+                pygame.mixer.music.unpause()
+            elif self.playlist:
+                pygame.mixer.music.load(
+                    self.playlist[self.indice_musica_atual]['path'])
+                duracao_musica = math.floor(pygame.mixer.Sound(
+                    self.playlist[self.indice_musica_atual]['path']).get_length())
+                self.ui.musicaSlider.setMaximum(duracao_musica)
+                pygame.mixer.music.play()
+        else:
+            pass
 
-# Função para atualizar o slider com base na posição da música
-def update_slider():
-    if player.is_playing():
-        # Obter a posição atual da música em milissegundos
-        position = player.get_time()
-        duration = player.get_length()
-        if duration > 0:
-            # Calcular a posição como uma porcentagem da duração
-            position_percentage = (position / duration) * 100
+    def atualizarSlider(self):
+        if pygame.mixer.music.get_busy():
+            tempo_atual = pygame.mixer.music.get_pos() // 1000
+            self.ui.musicaSlider.setValue(tempo_atual)
+        for event in pygame.event.get():
+            if event.type == self.SONG_END:
+                self.pularMusica()
 
-            # Calcular o tempo decorrido e o tempo total
-            elapsed_time = position / 1000  # em segundos
-            total_time = duration / 1000  # em segundos
+    def pularMusica(self):
+        if self.playlist:
+            # Pare a música atual, se estiver tocando
+            pygame.mixer.music.pause()
 
-            # Formatando os tempos decorridos e totais como minutos:segundos
-            elapsed_time_str = "{:02d}:{:02d}".format(int(elapsed_time // 60), int(elapsed_time % 60))
-            total_time_str = "{:02d}:{:02d}".format(int(total_time // 60), int(total_time % 60))
+            # Verifique se chegamos ao final da playlist
+            if hasattr(self, 'indice_musica_atual'):
+                if self.indice_musica_atual + 1 < len(self.playlist):
+                    self.indice_musica_atual += 1
+                else:
+                    # Volte para a primeira música
+                    self.indice_musica_atual = 0
+            else:
+                # Se é a primeira vez, comece com a primeira música
+                self.indice_musica_atual = 0
 
-            # Atualizar o rótulo com a duração decorrida e total
-            percent_label.setText(f"Duração: {elapsed_time_str} / {total_time_str}")
+            proxima_musica_path = self.playlist[self.indice_musica_atual]['path']
+            pygame.mixer.music.load(proxima_musica_path)
+            duracao_musica = math.floor(pygame.mixer.Sound(
+                self.playlist[self.indice_musica_atual]['path']).get_length())
+            self.ui.musicaSlider.setMaximum(duracao_musica)
+            pygame.mixer.music.play()
 
-            # Atualizar o slider
-            music_slider.setValue(int(position_percentage))
+    def anteriorMusica(self):
+        if self.playlist:
+            pygame.mixer.music.pause()
 
-def set_music_position(position):
-    if player.get_media() is not None:
-        duration = player.get_media().get_duration()
-        if duration > 0:
-            # Calcule a posição em milissegundos com base na porcentagem do slider
-            position_ms = (position / 100) * duration
-            player.set_time(int(position_ms))
+            if hasattr(self, 'indice_musica_atual') and self.indice_musica_atual > 0:
+                self.indice_musica_atual -= 1
+            else:
+                self.indice_musica_atual = len(self.playlist) - 1
 
-            # Se a música não estiver tocando ou estiver pausada, inicie a reprodução a partir da nova posição
-            if not player.is_playing() or player.get_state() == vlc.State.Ended:
-                player.play()
+            musica_anterior_path = self.playlist[self.indice_musica_atual]['path']
+            pygame.mixer.music.load(musica_anterior_path)
+            duracao_musica = math.floor(pygame.mixer.Sound(musica_anterior_path).get_length())
+            self.ui.musicaSlider.setMaximum(duracao_musica)
+            pygame.mixer.music.play()
 
-# Inicialização da aplicação Qt
-app = QApplication(sys.argv)
+    def iniciarMusicaClicada(self, item):
+        index = self.ui.listWidget.row(item)
+        if index < len(self.playlist):
+            pygame.mixer.music.pause()
+            self.indice_musica_atual = index
+            print(self.indice_musica_atual)
+            proxima_musica_path = self.playlist[self.indice_musica_atual]['path']
+            pygame.mixer.music.load(proxima_musica_path)
+            duracao_musica = math.floor(pygame.mixer.Sound(
+                self.playlist[self.indice_musica_atual]['path']).get_length())
+            self.ui.musicaSlider.setMaximum(duracao_musica)
+            pygame.mixer.music.play()
 
-# Configuração da janela
-janela = QWidget()
-janela.setWindowTitle("Programa de Música / Youtube Downloader")
-janela.setGeometry(100, 100, 400, 300)
-janela.setWindowIcon(QIcon("icon.png"))
+    def pararMusica(self):
+        pygame.mixer.music.pause()
 
-layout = QVBoxLayout()
+    def atualizarPlaylistLabel(self):
+        self.ui.listWidget.clear()
 
-# Rótulo para exibir o progresso
-percent_label = QLabel()
-set_label_style(percent_label)
-layout.addWidget(percent_label)
+        for index, item in enumerate(self.playlist):
+            nome_musica = item['nome_musica']
+            self.ui.listWidget.addItem(f"{index + 1}. {nome_musica}")
 
-# Botões para controlar a música
-play_music_button = QPushButton("Tocar Música")
-set_button_style(play_music_button)
-play_music_button.clicked.connect(lambda: tocarMusica(player, musica))
-layout.addWidget(play_music_button)
+    def baixarMusica(self, url):
+        self.ui.progressoLabel.setText("Pesquisando")
 
-stop_music_button = QPushButton("Parar Música")
-set_button_style(stop_music_button)
-stop_music_button.clicked.connect(lambda: pararMusica(player))
-layout.addWidget(stop_music_button)
+        def progress_callback(status):
+            if status['status'] == 'downloading':
+                self.ui.progressoLabel.setText(f"Baixando")
+                if 'downloaded_bytes' in status and 'total_bytes' in status:
+                    downloaded = status['downloaded_bytes']
+                    total = status['total_bytes']
+                    if total > 0:
+                        progress_percent = int((downloaded / total) * 100)
+                        self.ui.BarraDeProgresso.setValue(progress_percent)
+            elif status['status'] == 'finished':
+                self.ui.progressoLabel.setText("Convertendo")
+            else:
+                self.ui.progressoLabel.setText("Processando")
 
-# Botões para escolher e baixar música
-botaoEscolherMusica = QPushButton("Escolher Música")
-set_button_style(botaoEscolherMusica)
-botaoEscolherMusica.clicked.connect(escolherMusica)
-layout.addWidget(botaoEscolherMusica)
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'default_search': "ytsearch",
+            'progress_hooks': [progress_callback],
+            'match-filter': 'is-video',
+            'outtmpl': '%(uploader)s - %(title)s.%(ext)s',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+        }
 
-botaoBaixarMusica = QPushButton("Baixar Música")
-set_button_style(botaoBaixarMusica)
-botaoBaixarMusica.clicked.connect(baixarMusica)
-layout.addWidget(botaoBaixarMusica)
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
 
-# Slider para controlar a posição da música
-music_slider = QSlider(Qt.Horizontal)
-layout.addWidget(music_slider)
+            nome_webm = ydl.prepare_filename(ydl.extract_info(url))
 
-# Criando um temporizador para atualizar o slider automaticamente
-slider_timer = QTimer()
-slider_timer.timeout.connect(update_slider)
+            if not os.path.exists(nome_webm):
+                self.ui.progressoLabel.setText("Pronto!")
+                self.signals.pronto_signal.emit()
 
-# Conectar o evento sliderMoved ao método set_music_position
-music_slider.sliderMoved.connect(set_music_position)
+    def procurarMusica(self):
+        termo_pesquisa, _ = QInputDialog.getText(
+            None, "Digite o termo de pesquisa", "Digite o nome da música ou artista:")
+        if termo_pesquisa:
+            threading.Thread(target=self.baixarMusica,
+                             args=(termo_pesquisa,)).start()
 
-# Configuração da janela principal
-janela.setLayout(layout)
-janela.show()
+    def escolherMusica(self):
+        self.playlist = escolherMusica(self.playlist)
+        self.atualizarPlaylistLabel()
+        self.tocarMusica()
 
-sys.exit(app.exec_())
+if __name__ == '__main__':
+    pygame.init()  # Inicialize o Pygame
+    app = QtWidgets.QApplication([])
+    window = SuaJanelaPrincipal()
+    window.show()
+    app.exec()
+    pygame.quit()  # Finalize o Pygame quando a aplicação encerrar
