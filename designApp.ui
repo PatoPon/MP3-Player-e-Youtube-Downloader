@@ -6,35 +6,74 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>639</width>
-    <height>383</height>
+    <width>931</width>
+    <height>658</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="font">
+   <font>
+    <family>Georgia</family>
+   </font>
+  </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>MP3 Player / Youtube Downloader</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QProgressBar" name="BarraDeProgresso">
     <property name="geometry">
      <rect>
-      <x>520</x>
-      <y>310</y>
-      <width>118</width>
+      <x>300</x>
+      <y>590</y>
+      <width>231</width>
       <height>23</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <family>Courier</family>
+     </font>
+    </property>
     <property name="value">
-     <number>0</number>
+     <number>100</number>
     </property>
    </widget>
    <widget class="QSlider" name="musicaSlider">
     <property name="geometry">
      <rect>
-      <x>420</x>
-      <y>10</y>
-      <width>201</width>
+      <x>700</x>
+      <y>600</y>
+      <width>211</width>
       <height>22</height>
      </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QSlider {
+    border: none; /* Remove a borda padrão do slider */
+    background: #333; /* Cor de fundo escura */
+    height: 10px; /* Altura do slider */
+    border-radius: 10px; /* Borda arredondada */
+}
+
+QSlider::groove:horizontal {
+    background: #555; /* Cor da área da barra de música */
+    border: 1px solid #666; /* Borda da área da barra de música */
+    height: 10px; /* Altura da área da barra de música */
+    border-radius: 5px; /* Borda arredondada */
+}
+
+QSlider::handle:horizontal {
+    background: #1E90FF; /* Cor da alça do slider (azul escuro) */
+    border: 5px solid #1E90FF; /* Borda da alça do slider */
+    width: 2px; /* Largura da alça do slider */
+    height: 5px; /* Altura da alça do slider */
+    border-radius: 10px; /* Borda arredondada da alça */
+}</string>
     </property>
     <property name="orientation">
      <enum>Qt::Horizontal</enum>
@@ -43,37 +82,63 @@
    <widget class="QPushButton" name="botaoTocar">
     <property name="geometry">
      <rect>
-      <x>420</x>
-      <y>40</y>
-      <width>75</width>
-      <height>23</height>
+      <x>790</x>
+      <y>555</y>
+      <width>32</width>
+      <height>32</height>
      </rect>
     </property>
-    <property name="text">
-     <string>Tocar</string>
+    <property name="autoFillBackground">
+     <bool>false</bool>
     </property>
-   </widget>
-   <widget class="QPushButton" name="botaoParar">
-    <property name="geometry">
-     <rect>
-      <x>550</x>
-      <y>40</y>
-      <width>75</width>
-      <height>23</height>
-     </rect>
+    <property name="styleSheet">
+     <string notr="true">QPushButton {
+    color: white; 
+    border: none; 
+    border-radius: 5px;
+    padding: 10px 20px;
+}</string>
     </property>
     <property name="text">
-     <string>Parar</string>
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset>
+      <normaloff>reproduzir.png</normaloff>reproduzir.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>64</width>
+      <height>64</height>
+     </size>
     </property>
    </widget>
    <widget class="QPushButton" name="botaoEscolher">
     <property name="geometry">
      <rect>
-      <x>420</x>
-      <y>70</y>
-      <width>61</width>
-      <height>23</height>
+      <x>120</x>
+      <y>580</y>
+      <width>91</width>
+      <height>32</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Georgia</family>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton {
+    background-color: #1E90FF;
+    color: white; 
+    border: none; 
+    border-radius: 5px;
+    padding: 10px 20px;
+}
+
+QPushButton:hover {
+    background-color: #4169E1; 
+}</string>
     </property>
     <property name="text">
      <string>Escolher</string>
@@ -82,11 +147,35 @@
    <widget class="QPushButton" name="botaoBaixar">
     <property name="geometry">
      <rect>
-      <x>560</x>
-      <y>70</y>
-      <width>61</width>
-      <height>23</height>
+      <x>10</x>
+      <y>580</y>
+      <width>96</width>
+      <height>32</height>
      </rect>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>16777215</width>
+      <height>1600000</height>
+     </size>
+    </property>
+    <property name="font">
+     <font>
+      <family>Georgia</family>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton {
+    background-color: #1E90FF;
+    color: white; 
+    border: none; 
+    border-radius: 5px;
+    padding: 10px 20px;
+}
+
+QPushButton:hover {
+    background-color: #4169E1; 
+}</string>
     </property>
     <property name="text">
      <string>Baixar</string>
@@ -95,8 +184,8 @@
    <widget class="QLabel" name="progressoLabel">
     <property name="geometry">
      <rect>
-      <x>410</x>
-      <y>310</y>
+      <x>350</x>
+      <y>565</y>
       <width>101</width>
       <height>20</height>
      </rect>
@@ -114,24 +203,48 @@
    <widget class="QPushButton" name="botaoPular">
     <property name="geometry">
      <rect>
-      <x>540</x>
-      <y>100</y>
-      <width>81</width>
-      <height>23</height>
+      <x>830</x>
+      <y>555</y>
+      <width>31</width>
+      <height>32</height>
      </rect>
     </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton {
+    color: white; 
+    border: none; 
+    border-radius: 5px;
+    padding: 10px 20px;
+}</string>
+    </property>
     <property name="text">
-     <string>Pular</string>
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset>
+      <normaloff>fim.png</normaloff>fim.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>48</width>
+      <height>48</height>
+     </size>
     </property>
    </widget>
    <widget class="QListWidget" name="listWidget">
     <property name="geometry">
      <rect>
       <x>0</x>
-      <y>0</y>
-      <width>401</width>
-      <height>341</height>
+      <y>40</y>
+      <width>931</width>
+      <height>511</height>
      </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
     </property>
     <property name="font">
      <font>
@@ -139,36 +252,87 @@
       <pointsize>10</pointsize>
      </font>
     </property>
+    <property name="styleSheet">
+     <string notr="true">QListWidget {
+    background-color: #333; /* Dark background color */
+    border: none; /* Remove the default border */
+    padding: 10px; /* Internal padding for the list */
+}
+
+QListWidget::item {
+    background: transparent;
+    color: white; /* Text color in the list */
+    padding: 5px; /* Internal padding for each item in the list */
+}
+
+QListWidget::item:selected {
+    background: #1E90FF; /* Background color when an item is selected (dark blue) */
+    color: white; /* Text color of the selected item */
+    outline: none; /* Remove the focus outline */
+}
+
+QListWidget::item:hover {
+    background: #666; /* Background color when the mouse hovers over an item */
+}</string>
+    </property>
    </widget>
    <widget class="QPushButton" name="botaoAnterior">
     <property name="geometry">
      <rect>
-      <x>420</x>
-      <y>100</y>
-      <width>81</width>
-      <height>23</height>
+      <x>750</x>
+      <y>555</y>
+      <width>31</width>
+      <height>32</height>
      </rect>
     </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton {
+    color: white; 
+    border: none; 
+    border-radius: 5px;
+    padding: 10px 20px;
+}</string>
+    </property>
     <property name="text">
-     <string>Anterior</string>
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset>
+      <normaloff>inicio.png</normaloff>inicio.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>48</width>
+      <height>48</height>
+     </size>
     </property>
    </widget>
-  </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>639</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <widget class="QMenu" name="menuM_sicas">
-    <property name="title">
-     <string>Músicas</string>
+   <widget class="QLabel" name="musicaTocando">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>0</y>
+      <width>911</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true"/>
+    </property>
+    <property name="text">
+     <string>Tocando: Nada</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
     </property>
    </widget>
-   <addaction name="menuM_sicas"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>

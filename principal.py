@@ -13,6 +13,12 @@ class MySignals(QObject):
     pronto_signal = pyqtSignal()
 
 
+class MyListWidget(QListWidget):
+    def dropEvent(self, event):
+        super().dropEvent(event)
+        print("Item solto")
+
+
 class SuaJanelaPrincipal(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -27,32 +33,89 @@ class SuaJanelaPrincipal(QMainWindow):
         self.playlist_text = "Playlist vazia"
         self.ui.progressoLabel.setText("Progresso")
         self.indice_musica_atual = 0
+        self.indexOriginal = 0
 
         self.SONG_END = pygame.USEREVENT
         pygame.mixer.music.set_endevent(self.SONG_END)
 
         # Agora você pode interagir com os elementos da interface
         self.ui.botaoTocar.clicked.connect(self.tocarMusica)
-        self.ui.botaoParar.clicked.connect(self.pararMusica)
         self.ui.botaoEscolher.clicked.connect(self.escolherMusica)
         self.ui.botaoPular.clicked.connect(self.pularMusica)
-        self.ui.botaoAnterior.clicked.connect(self.anteriorMusicaMusica)
+        self.ui.botaoAnterior.clicked.connect(self.anteriorMusica)
         self.ui.botaoBaixar.clicked.connect(self.procurarMusica)
 
         self.ui.listWidget.itemClicked.connect(self.iniciarMusicaClicada)
+
+        self.ui.listWidget.setDragEnabled(True)
+        self.ui.listWidget.setAcceptDrops(True)
+        self.ui.listWidget.setDragDropMode(QListWidget.InternalMove)
 
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(lambda: self.ui.progressoLabel.setText(
             "Progresso"))  # Conecte o slot de redefinição
         self.timer.setSingleShot(True)
 
-        self.timerSlide = QtCore.QTimer(self)
-        self.timerSlide.start(1)
-        self.timerSlide.timeout.connect(self.atualizarSlider)
-
         self.signals.pronto_signal.connect(lambda:
                                            self.timer.start(5000)
                                            )
+
+        self.timerSlide = QtCore.QTimer(self)
+        self.timerSlide.timeout.connect(self.atualizarSlider)
+        self.timerSlide.start(1000)
+
+        self.ui.musicaSlider.sliderReleased.connect(self.atualizarSliderUsuario)
+
+        self.ui.listWidget.dropEvent = self.customDropEvent
+        self.ui.listWidget.itemPressed.connect(self.clicked)
+
+    def clicked(self, item):
+        self.indexOriginal = self.ui.listWidget.row(item)
+
+    def customDropEvent(self, event):
+        drop_position = event.pos()
+        # Encontre o item na posição do cursor do mouse
+        dropped_item = self.ui.listWidget.itemAt(drop_position)
+
+        if dropped_item:
+            # Obtém o índice do item que está sendo arrastado
+            original_index = self.playlist.index(
+                self.playlist[self.indexOriginal])
+
+            # Obtém o índice do item onde o usuário soltou o item arrastado
+            dropped_index = self.ui.listWidget.row(dropped_item)
+
+            if dropped_index is not None and 0 <= dropped_index < len(self.playlist) and original_index != dropped_index:
+                # Realiza a troca dos dois itens na lista
+                self.playlist[original_index], self.playlist[dropped_index] = self.playlist[dropped_index], self.playlist[original_index]
+
+                # Atualiza a interface ou faça outras operações necessárias
+                self.atualizarPlaylistLabel()
+
+    def atualizarSliderUsuario(self):
+        print('oi')
+        if pygame.mixer.music.get_busy():
+            pygame.mixer.music.pause()
+            self.ui.musicaSlider.setMaximum(int(pygame.mixer.Sound(
+                self.playlist[self.indice_musica_atual]['path']).get_length()))
+            position = self.ui.musicaSlider.value()
+            pygame.mixer.music.set_pos(position)
+            pygame.mixer.music.unpause()
+
+    def atualizarSlider(self):
+        if pygame.mixer.music.get_busy():
+            self.ui.musicaTocando.setText(
+                self.playlist[self.indice_musica_atual]['nome_musica'])
+            self.ui.musicaSlider.setValue(self.ui.musicaSlider.value() + 1)
+        else:
+            try:
+                self.ui.musicaTocando.setText(self.playlist[self.indice_musica_atual]['nome_musica'])
+            except:
+                self.ui.musicaTocando.setText("Nenhuma música selecionada")
+
+        for event in pygame.event.get():
+            if event.type == self.SONG_END:
+                self.pularMusica()
 
     def tocarMusica(self):
         if not pygame.mixer.music.get_busy():
@@ -61,25 +124,20 @@ class SuaJanelaPrincipal(QMainWindow):
             elif self.playlist:
                 pygame.mixer.music.load(
                     self.playlist[self.indice_musica_atual]['path'])
-                duracao_musica = math.floor(pygame.mixer.Sound(
-                    self.playlist[self.indice_musica_atual]['path']).get_length())
-                self.ui.musicaSlider.setMaximum(duracao_musica)
+                self.ui.musicaSlider.setValue(0)
+                self.ui.musicaSlider.setMaximum(int(pygame.mixer.Sound(
+                    self.playlist[self.indice_musica_atual]['path']).get_length()))
+                self.ui.musicaTocando.setText(self.playlist[self.indice_musica_atual]['nome_musica'])
                 pygame.mixer.music.play()
-        else:
-            pass
 
-    def atualizarSlider(self):
-        if pygame.mixer.music.get_busy():
-            tempo_atual = pygame.mixer.music.get_pos() // 1000
-            self.ui.musicaSlider.setValue(tempo_atual)
-        for event in pygame.event.get():
-            if event.type == self.SONG_END:
-                self.pularMusica()
+                for i in range(self.ui.listWidget.count()):
+                    item = self.ui.listWidget.item(i)
+                    item.setSelected(i == self.indice_musica_atual)
+        else:
+            pygame.mixer.music.pause()
 
     def pularMusica(self):
         if self.playlist:
-            # Pare a música atual, se estiver tocando
-            pygame.mixer.music.pause()
 
             # Verifique se chegamos ao final da playlist
             if hasattr(self, 'indice_musica_atual'):
@@ -94,10 +152,15 @@ class SuaJanelaPrincipal(QMainWindow):
 
             proxima_musica_path = self.playlist[self.indice_musica_atual]['path']
             pygame.mixer.music.load(proxima_musica_path)
-            duracao_musica = math.floor(pygame.mixer.Sound(
-                self.playlist[self.indice_musica_atual]['path']).get_length())
-            self.ui.musicaSlider.setMaximum(duracao_musica)
+            self.ui.musicaSlider.setValue(0)
+            self.ui.musicaSlider.setMaximum(int(pygame.mixer.Sound(
+                self.playlist[self.indice_musica_atual]['path']).get_length()))
+            self.ui.musicaTocando.setText(self.playlist[self.indice_musica_atual]['nome_musica'])
             pygame.mixer.music.play()
+
+            for i in range(self.ui.listWidget.count()):
+                item = self.ui.listWidget.item(i)
+                item.setSelected(i == self.indice_musica_atual)
 
     def anteriorMusica(self):
         if self.playlist:
@@ -110,32 +173,42 @@ class SuaJanelaPrincipal(QMainWindow):
 
             musica_anterior_path = self.playlist[self.indice_musica_atual]['path']
             pygame.mixer.music.load(musica_anterior_path)
-            duracao_musica = math.floor(pygame.mixer.Sound(musica_anterior_path).get_length())
-            self.ui.musicaSlider.setMaximum(duracao_musica)
+            self.ui.musicaSlider.setValue(0)
+            self.ui.musicaSlider.setMaximum(int(pygame.mixer.Sound(
+                self.playlist[self.indice_musica_atual]['path']).get_length()))
+            self.ui.musicaTocando.setText(self.playlist[self.indice_musica_atual]['nome_musica'])
             pygame.mixer.music.play()
 
+            for i in range(self.ui.listWidget.count()):
+                item = self.ui.listWidget.item(i)
+                item.setSelected(i == self.indice_musica_atual)
+
     def iniciarMusicaClicada(self, item):
+        self.ui.listWidget.clearFocus()
         index = self.ui.listWidget.row(item)
         if index < len(self.playlist):
             pygame.mixer.music.pause()
             self.indice_musica_atual = index
-            print(self.indice_musica_atual)
             proxima_musica_path = self.playlist[self.indice_musica_atual]['path']
             pygame.mixer.music.load(proxima_musica_path)
-            duracao_musica = math.floor(pygame.mixer.Sound(
-                self.playlist[self.indice_musica_atual]['path']).get_length())
-            self.ui.musicaSlider.setMaximum(duracao_musica)
+            self.ui.musicaSlider.setValue(0)
+            self.ui.musicaSlider.setMaximum(int(pygame.mixer.Sound(
+                self.playlist[self.indice_musica_atual]['path']).get_length()))
+            self.ui.musicaTocando.setText(self.playlist[self.indice_musica_atual]['nome_musica'])
             pygame.mixer.music.play()
 
-    def pararMusica(self):
-        pygame.mixer.music.pause()
+            for i in range(self.ui.listWidget.count()):
+                item = self.ui.listWidget.item(i)
+                item.setSelected(i == self.indice_musica_atual)
 
     def atualizarPlaylistLabel(self):
         self.ui.listWidget.clear()
-
         for index, item in enumerate(self.playlist):
             nome_musica = item['nome_musica']
             self.ui.listWidget.addItem(f"{index + 1}. {nome_musica}")
+        for i in range(self.ui.listWidget.count()):
+            item = self.ui.listWidget.item(i)
+            item.setSelected(i == self.indice_musica_atual)
 
     def baixarMusica(self, url):
         self.ui.progressoLabel.setText("Pesquisando")
@@ -188,7 +261,10 @@ class SuaJanelaPrincipal(QMainWindow):
         self.atualizarPlaylistLabel()
         self.tocarMusica()
 
+
 if __name__ == '__main__':
+    pygame.mixer.pre_init(44100, -16, 2, 2048)
+    pygame.mixer.init()
     pygame.init()  # Inicialize o Pygame
     app = QtWidgets.QApplication([])
     window = SuaJanelaPrincipal()

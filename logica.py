@@ -9,7 +9,7 @@ def tocarMusica(playlist):
         pygame.mixer.music.load(playlist[0]['path'])
         pygame.mixer.music.play()
 
-def adicionarMusicaAPlaylist(playlist, file_path):
+def adicionarMusicaAPlaylist(playlist, file_path, numero):
     nome_musica = limpar_nome_musica(os.path.basename(file_path))
     playlist.append({'path': file_path, 'nome_musica': nome_musica})
 
@@ -24,13 +24,15 @@ def escolherMusica(playlist):
         if selected_files:
             # Crie um conjunto de músicas já existentes na playlist
             musicas_na_playlist = set(musica['nome_musica'] for musica in playlist)
+            numero = len(playlist) + 1  # Comece com o próximo número disponível
 
             for file_path in selected_files:
                 nome_musica = limpar_nome_musica(os.path.basename(file_path))
                 # Verifique se a música já está na playlist antes de adicioná-la
                 if nome_musica not in musicas_na_playlist:
-                    adicionarMusicaAPlaylist(playlist, file_path)
+                    adicionarMusicaAPlaylist(playlist, file_path, numero)
                     musicas_na_playlist.add(nome_musica)
+                    numero += 1  # Incremente o número para a próxima música
     
     return playlist
 
