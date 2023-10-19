@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(931, 658)
+        MainWindow.resize(840, 508)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -26,14 +26,14 @@ class Ui_MainWindow(object):
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.BarraDeProgresso = QtWidgets.QProgressBar(self.centralwidget)
-        self.BarraDeProgresso.setGeometry(QtCore.QRect(300, 590, 231, 23))
+        self.BarraDeProgresso.setGeometry(QtCore.QRect(300, 445, 231, 23))
         font = QtGui.QFont()
         font.setFamily("Courier")
         self.BarraDeProgresso.setFont(font)
         self.BarraDeProgresso.setProperty("value", 100)
         self.BarraDeProgresso.setObjectName("BarraDeProgresso")
         self.musicaSlider = QtWidgets.QSlider(self.centralwidget)
-        self.musicaSlider.setGeometry(QtCore.QRect(700, 600, 211, 22))
+        self.musicaSlider.setGeometry(QtCore.QRect(610, 455, 211, 22))
         self.musicaSlider.setStyleSheet("QSlider {\n"
 "    border: none; /* Remove a borda padrão do slider */\n"
 "    background: #333; /* Cor de fundo escura */\n"
@@ -58,7 +58,7 @@ class Ui_MainWindow(object):
         self.musicaSlider.setOrientation(QtCore.Qt.Horizontal)
         self.musicaSlider.setObjectName("musicaSlider")
         self.botaoTocar = QtWidgets.QPushButton(self.centralwidget)
-        self.botaoTocar.setGeometry(QtCore.QRect(790, 555, 32, 32))
+        self.botaoTocar.setGeometry(QtCore.QRect(700, 410, 32, 32))
         self.botaoTocar.setAutoFillBackground(False)
         self.botaoTocar.setStyleSheet("QPushButton {\n"
 "    color: white; \n"
@@ -73,7 +73,7 @@ class Ui_MainWindow(object):
         self.botaoTocar.setIconSize(QtCore.QSize(64, 64))
         self.botaoTocar.setObjectName("botaoTocar")
         self.botaoEscolher = QtWidgets.QPushButton(self.centralwidget)
-        self.botaoEscolher.setGeometry(QtCore.QRect(120, 580, 91, 32))
+        self.botaoEscolher.setGeometry(QtCore.QRect(130, 410, 141, 32))
         font = QtGui.QFont()
         font.setFamily("Georgia")
         self.botaoEscolher.setFont(font)
@@ -90,7 +90,7 @@ class Ui_MainWindow(object):
 "}")
         self.botaoEscolher.setObjectName("botaoEscolher")
         self.botaoBaixar = QtWidgets.QPushButton(self.centralwidget)
-        self.botaoBaixar.setGeometry(QtCore.QRect(10, 580, 96, 32))
+        self.botaoBaixar.setGeometry(QtCore.QRect(10, 430, 96, 32))
         self.botaoBaixar.setMaximumSize(QtCore.QSize(16777215, 1600000))
         font = QtGui.QFont()
         font.setFamily("Georgia")
@@ -108,12 +108,12 @@ class Ui_MainWindow(object):
 "}")
         self.botaoBaixar.setObjectName("botaoBaixar")
         self.progressoLabel = QtWidgets.QLabel(self.centralwidget)
-        self.progressoLabel.setGeometry(QtCore.QRect(350, 565, 101, 20))
+        self.progressoLabel.setGeometry(QtCore.QRect(350, 420, 101, 20))
         self.progressoLabel.setTextFormat(QtCore.Qt.AutoText)
         self.progressoLabel.setAlignment(QtCore.Qt.AlignCenter)
         self.progressoLabel.setObjectName("progressoLabel")
         self.botaoPular = QtWidgets.QPushButton(self.centralwidget)
-        self.botaoPular.setGeometry(QtCore.QRect(830, 555, 31, 32))
+        self.botaoPular.setGeometry(QtCore.QRect(740, 410, 31, 32))
         self.botaoPular.setStyleSheet("QPushButton {\n"
 "    color: white; \n"
 "    border: none; \n"
@@ -127,15 +127,16 @@ class Ui_MainWindow(object):
         self.botaoPular.setIconSize(QtCore.QSize(48, 48))
         self.botaoPular.setObjectName("botaoPular")
         self.listWidget = QtWidgets.QListWidget(self.centralwidget)
-        self.listWidget.setGeometry(QtCore.QRect(0, 40, 931, 511))
+        self.listWidget.setGeometry(QtCore.QRect(0, 40, 841, 360))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.listWidget.sizePolicy().hasHeightForWidth())
         self.listWidget.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
-        font.setFamily("Sitka Heading")
-        font.setPointSize(10)
+        font.setFamily("Bahnschrift Light")
+        font.setPointSize(9)
+        font.setUnderline(False)
         self.listWidget.setFont(font)
         self.listWidget.setStyleSheet("QListWidget {\n"
 "    background-color: #333; /* Dark background color */\n"
@@ -146,7 +147,7 @@ class Ui_MainWindow(object):
 "QListWidget::item {\n"
 "    background: transparent;\n"
 "    color: white; /* Text color in the list */\n"
-"    padding: 5px; /* Internal padding for each item in the list */\n"
+"    padding: 2px; /* Internal padding for each item in the list */\n"
 "}\n"
 "\n"
 "QListWidget::item:selected {\n"
@@ -160,7 +161,7 @@ class Ui_MainWindow(object):
 "}")
         self.listWidget.setObjectName("listWidget")
         self.botaoAnterior = QtWidgets.QPushButton(self.centralwidget)
-        self.botaoAnterior.setGeometry(QtCore.QRect(750, 555, 31, 32))
+        self.botaoAnterior.setGeometry(QtCore.QRect(660, 410, 31, 32))
         self.botaoAnterior.setStyleSheet("QPushButton {\n"
 "    color: white; \n"
 "    border: none; \n"
@@ -183,6 +184,23 @@ class Ui_MainWindow(object):
         self.musicaTocando.setStyleSheet("")
         self.musicaTocando.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
         self.musicaTocando.setObjectName("musicaTocando")
+        self.botaoEscolherPasta = QtWidgets.QPushButton(self.centralwidget)
+        self.botaoEscolherPasta.setGeometry(QtCore.QRect(130, 450, 141, 32))
+        font = QtGui.QFont()
+        font.setFamily("Georgia")
+        self.botaoEscolherPasta.setFont(font)
+        self.botaoEscolherPasta.setStyleSheet("QPushButton {\n"
+"    background-color: #1E90FF;\n"
+"    color: white; \n"
+"    border: none; \n"
+"    border-radius: 5px;\n"
+"    padding: 10px 20px;\n"
+"}\n"
+"\n"
+"QPushButton:hover {\n"
+"    background-color: #4169E1; \n"
+"}")
+        self.botaoEscolherPasta.setObjectName("botaoEscolherPasta")
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
@@ -194,7 +212,8 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MP3 Player / Youtube Downloader"))
-        self.botaoEscolher.setText(_translate("MainWindow", "Escolher"))
+        self.botaoEscolher.setText(_translate("MainWindow", "Escolher Arquivo"))
         self.botaoBaixar.setText(_translate("MainWindow", "Baixar"))
         self.progressoLabel.setText(_translate("MainWindow", "Progresso"))
-        self.musicaTocando.setText(_translate("MainWindow", "Tocando: Nada"))
+        self.musicaTocando.setText(_translate("MainWindow", "Carregando..."))
+        self.botaoEscolherPasta.setText(_translate("MainWindow", "Escolher Pasta"))

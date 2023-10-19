@@ -13,6 +13,32 @@ def adicionarMusicaAPlaylist(playlist, file_path, numero):
     nome_musica = limpar_nome_musica(os.path.basename(file_path))
     playlist.append({'path': file_path, 'nome_musica': nome_musica})
 
+def escolherPasta(playlist):
+    # Crie um diálogo de seleção de pasta
+    folder_dialog = QFileDialog()
+    folder_dialog.setFileMode(QFileDialog.Directory)
+    folder_dialog.setOption(QFileDialog.ShowDirsOnly, True)
+
+    if folder_dialog.exec_():
+        selected_folder = folder_dialog.selectedFiles()
+        if selected_folder:
+            folder_path = selected_folder[0]
+
+            # Agora, listamos todos os arquivos .mp3 na pasta selecionada
+            for root, _, files in os.walk(folder_path):
+                for file_name in files:
+                    if file_name.lower().endswith(".mp3"):
+                        file_path = os.path.join(root, file_name)
+                        nome_musica = limpar_nome_musica(os.path.basename(file_path))
+
+                        # Verifique se a música já está na playlist antes de adicioná-la
+                        if nome_musica not in (musica['nome_musica'] for musica in playlist):
+                            adicionarMusicaAPlaylist(playlist, file_path, len(playlist) + 1)
+    
+    return playlist
+
+    return playlist
+
 def escolherMusica(playlist):
     file_dialog = QFileDialog()
     file_dialog.setNameFilter("Arquivos de Áudio (*.mp3)")
