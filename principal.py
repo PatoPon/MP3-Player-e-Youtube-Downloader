@@ -28,6 +28,10 @@ class SuaJanelaPrincipal(QMainWindow):
         self.musicasNaoCarregadas = []
         self.signals.musicasNaoCarregadasSignal.connect(
             self.musicasNaoCarregadasHandler)
+        
+        self.progress_bars = {}
+        self.downloadLista = []
+        self.baixando = False
 
         self.playlist = []
         self.playlist_text = "Playlist vazia"
@@ -56,7 +60,7 @@ class SuaJanelaPrincipal(QMainWindow):
             lambda: self.ui.progressoLabel.setText("Progresso"))
         self.timer.setSingleShot(True)
 
-        self.signals.pronto_signal.connect(lambda: self.timer.start(5000))
+        self.signals.pronto_signal.connect(self.iniciarTimerFimDownload)
 
         self.timerSlide = QtCore.QTimer(self)
         self.timerSlide.timeout.connect(self.updateSlider)
@@ -73,6 +77,9 @@ class SuaJanelaPrincipal(QMainWindow):
         self.timerCaixaDeTexto.setSingleShot(True)
 
         self.load_playlist()
+    
+    def iniciarTimerFimDownload(self):
+            self.timer.start(5000)
 
     def musicasNaoCarregadasHandler(self, musicasNaoCarregadas):
         message = "As seguintes músicas não puderam ser carregadas:\n\n"
@@ -267,51 +274,74 @@ class SuaJanelaPrincipal(QMainWindow):
             item = self.ui.listWidget.item(i)
             item.setSelected(i == self.indice_musica_atual)
 
-    def downloadMusic(self, url):
-        self.ui.progressoLabel.setText("Pesquisando")
+    def downloadMusic(self):
+        while self.downloadLista:
+            musica = self.downloadLista[0]
+            self.ui.progressoLabel.setText(f"Pesquisando {musica}")
 
-        def progress_callback(status):
-            if status['status'] == 'downloading':
-                self.ui.progressoLabel.setText(f"Baixando")
-                if 'downloaded_bytes' in status and 'total_bytes' in status:
-                    downloaded = status['downloaded_bytes']
-                    total = status['total_bytes']
-                    if total > 0:
-                        progress_percent = int((downloaded / total) * 100)
-                        self.ui.BarraDeProgresso.setValue(progress_percent)
-            elif status['status'] == 'finished':
-                self.ui.progressoLabel.setText("Convertendo")
-            else:
-                self.ui.progressoLabel.setText("Processando")
+            self.baixando = True
 
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'default_search': "ytsearch",
-            'progress_hooks': [progress_callback],
-            'match-filter': 'is-video',
-            'outtmpl': '%(uploader)s - %(title)s.%(ext)s',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-        }
+            def progress_callback(status, termo):
+                match status['status']:
+                    case 'downloading':
+                        self.ui.progressoLabel.setText(f"Baixando {termo}")
+                        if 'downloaded_bytes' in status and 'total_bytes' in status:
+                            downloaded = status['downloaded_bytes']
+                            total = status['total_bytes']
+                            if total > 0:
+                                percentual = int((downloaded / total) * 100)
+                                self.ui.BarraDeProgresso.setValue(percentual)  
+                    case 'finished':
+                        self.ui.progressoLabel.setText(f"Convertendo {termo}")
+                    case _:
+                        self.ui.progressoLabel.setText(f"Processando {termo}")
 
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'default_search': "ytsearch",
+                'progress_hooks': [(lambda termo: lambda s: progress_callback(s, termo))(musica)],
+                'match-filter': 'is-video',
+                'outtmpl': '%(title)s.%(ext)s',
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '192',
+                }],
+            }
 
-            webm_name = ydl.prepare_filename(ydl.extract_info(url))
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info_dict = ydl.extract_info(musica, download=False)
+                ydl.download([musica])
 
-            if not os.path.exists(webm_name):
-                self.ui.progressoLabel.setText("Pronto!")
-                self.signals.pronto_signal.emit()
+                webm_name = ydl.prepare_filename(info_dict)
+                nome_base, extensao = os.path.splitext(webm_name)
+
+                if not os.path.exists(webm_name):
+                    self.ui.progressoLabel.setText(f"{nome_base}.mp3 foi baixado!")
+                    self.ui.downloadList.takeItem(0)
+                    self.downloadLista.remove(musica)
+        
+        if self.downloadLista:
+            downloadThread = threading.Thread(target=self.downloadMusic)
+            downloadThread.start()
+            self.baixando = True
+
+        self.ui.progressoLabel.setText("Todas as músicas foram baixadas!")
+        self.baixando = False
+        self.signals.pronto_signal.emit()
+
 
     def searchMusic(self):
         termo_pesquisa, _ = QInputDialog.getText(
             None, "Digite o termo de pesquisa", "Digite o nome da música ou artista:")
         if termo_pesquisa:
-            threading.Thread(target=self.downloadMusic,
-                             args=(termo_pesquisa,)).start()
+            self.downloadLista.append(termo_pesquisa)
+            self.ui.downloadList.addItem(termo_pesquisa)
+        
+            if self.downloadLista and self.baixando == False:
+                downloadThread = threading.Thread(target=self.downloadMusic)
+                downloadThread.start()
+                self.baixando = True
 
     def chooseMusic(self):
         self.playlist = escolherMusica(self.playlist)

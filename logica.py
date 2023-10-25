@@ -37,7 +37,6 @@ def escolherPasta(playlist):
     
     return playlist
 
-    return playlist
 
 def escolherMusica(playlist):
     file_dialog = QFileDialog()
