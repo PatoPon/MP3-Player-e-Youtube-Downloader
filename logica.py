@@ -38,6 +38,19 @@ def escolherPasta(playlist):
     return playlist
 
 
+def escolherPastaDownload(downloadFolder):
+    folder_dialog = QFileDialog()
+    folder_dialog.setFileMode(QFileDialog.Directory)
+    folder_dialog.setOption(QFileDialog.ShowDirsOnly, True)
+
+    if folder_dialog.exec_():
+        selected_folder = folder_dialog.selectedFiles()
+        if selected_folder:
+            folder_path = selected_folder[0]
+            return folder_path
+    
+    return downloadFolder
+
 def escolherMusica(playlist):
     file_dialog = QFileDialog()
     file_dialog.setNameFilter("Arquivos de Áudio (*.mp3)")

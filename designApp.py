@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(847, 517)
+        MainWindow.resize(847, 496)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -26,27 +26,41 @@ class Ui_MainWindow(object):
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("TubeTunes.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(icon)
-        MainWindow.setStyleSheet("")
+        MainWindow.setStyleSheet("background-color: rgb(66, 0, 66);")
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.tabWidget = QtWidgets.QTabWidget(self.centralwidget)
         self.tabWidget.setEnabled(True)
         self.tabWidget.setGeometry(QtCore.QRect(0, 0, 851, 501))
+        self.tabWidget.setStyleSheet("QTabWidget {\n"
+"    border: 0;\n"
+"}\n"
+"\n"
+"QTabBar::tab {\n"
+"  background: purple;\n"
+"  color: white;\n"
+"  padding: 5px;\n"
+" }\n"
+"\n"
+" QTabBar::tab:selected {\n"
+"  background: rgb(166, 0, 166);\n"
+" }")
         self.tabWidget.setObjectName("tabWidget")
         self.tab = QtWidgets.QWidget()
+        self.tab.setStyleSheet("")
         self.tab.setObjectName("tab")
         self.musicaTocando = QtWidgets.QLabel(self.tab)
-        self.musicaTocando.setGeometry(QtCore.QRect(3, -5, 911, 41))
+        self.musicaTocando.setGeometry(QtCore.QRect(5, -5, 911, 41))
         font = QtGui.QFont()
         font.setPointSize(12)
         font.setBold(True)
         font.setWeight(75)
         self.musicaTocando.setFont(font)
-        self.musicaTocando.setStyleSheet("")
+        self.musicaTocando.setStyleSheet("color: rgb(255, 255, 255)")
         self.musicaTocando.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
         self.musicaTocando.setObjectName("musicaTocando")
         self.listWidget = QtWidgets.QListWidget(self.tab)
-        self.listWidget.setGeometry(QtCore.QRect(0, 30, 781, 351))
+        self.listWidget.setGeometry(QtCore.QRect(0, 30, 771, 351))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -58,7 +72,7 @@ class Ui_MainWindow(object):
         font.setUnderline(False)
         self.listWidget.setFont(font)
         self.listWidget.setStyleSheet("QListWidget {\n"
-"    background-color: #333; /* Dark background color */\n"
+"    background-color: #800080; /* Dark background color */\n"
 "    border: none; /* Remove the default border */\n"
 "    padding: 3px; /* Internal padding for the list */\n"
 "}\n"
@@ -70,7 +84,7 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "QListWidget::item:selected {\n"
-"    background: #1E90FF; /* Background color when an item is selected (dark blue) */\n"
+"    background: #4169E1; /* Background color when an item is selected (dark blue) */\n"
 "    color: white; /* Text color of the selected item */\n"
 "    outline: none; /* Remove the focus outline */\n"
 "}\n"
@@ -79,42 +93,62 @@ class Ui_MainWindow(object):
 "    background: #666; /* Background color when the mouse hovers over an item */\n"
 "}")
         self.listWidget.setObjectName("listWidget")
-        self.verticalSlider = QtWidgets.QSlider(self.tab)
-        self.verticalSlider.setGeometry(QtCore.QRect(810, 20, 16, 351))
-        self.verticalSlider.setOrientation(QtCore.Qt.Vertical)
-        self.verticalSlider.setObjectName("verticalSlider")
+        self.volumeSlider = QtWidgets.QSlider(self.tab)
+        self.volumeSlider.setGeometry(QtCore.QRect(805, 30, 16, 351))
+        self.volumeSlider.setStyleSheet("QSlider {\n"
+"    border: none; /* Remove a borda padrão do slider */\n"
+"    background: purple; /* Cor de fundo escura */\n"
+"    width: 50px; /* Altura do slider */\n"
+"    border-radius: 10px; /* Borda arredondada */\n"
+"}\n"
+"\n"
+"QSlider::handle:vertical {\n"
+"    height: 4px;\n"
+"    background-color:rgb(170, 0, 255);\n"
+"    border-radius: 8px;\n"
+"    height: 8px;\n"
+"}\n"
+"\n"
+"QSlider::groove:vertical {\n"
+"    background: #4169E1; /* Cor da área da barra de música */\n"
+"    border: 3px solid #800080; /* Borda da área da barra de música */\n"
+"    width: 10px; /* Altura da área da barra de música */\n"
+"    border-radius: 5px; /* Borda arredondada */\n"
+"}")
+        self.volumeSlider.setProperty("value", 80)
+        self.volumeSlider.setOrientation(QtCore.Qt.Vertical)
+        self.volumeSlider.setObjectName("volumeSlider")
         self.musicaSlider = QtWidgets.QSlider(self.tab)
         self.musicaSlider.setGeometry(QtCore.QRect(340, 440, 291, 22))
         self.musicaSlider.setStyleSheet("QSlider {\n"
 "    border: none; /* Remove a borda padrão do slider */\n"
-"    background: #333; /* Cor de fundo escura */\n"
+"    background: purple; /* Cor de fundo escura */\n"
 "    height: 10px; /* Altura do slider */\n"
 "    border-radius: 10px; /* Borda arredondada */\n"
 "}\n"
 "\n"
-"QSlider::groove:horizontal {\n"
-"    background: #555; /* Cor da área da barra de música */\n"
-"    border: 1px solid #666; /* Borda da área da barra de música */\n"
-"    height: 10px; /* Altura da área da barra de música */\n"
-"    border-radius: 5px; /* Borda arredondada */\n"
+"QSlider::handle:horizontal {\n"
+"    height: 4px;\n"
+"    background-color:rgb(170, 0, 255);\n"
+"    border-radius: 8px;\n"
+"    width: 8px;\n"
 "}\n"
 "\n"
-"QSlider::handle:horizontal {\n"
-"    background: #1E90FF; /* Cor da alça do slider (azul escuro) */\n"
-"    border: 5px solid #1E90FF; /* Borda da alça do slider */\n"
-"    width: 2px; /* Largura da alça do slider */\n"
-"    height: 5px; /* Altura da alça do slider */\n"
-"    border-radius: 10px; /* Borda arredondada da alça */\n"
+"QSlider::groove:horizontal {\n"
+"    background: #4169E1; /* Cor da área da barra de música */\n"
+"    border: 3px solid #800080; /* Borda da área da barra de música */\n"
+"    height: 10px; /* Altura da área da barra de música */\n"
+"    border-radius: 5px; /* Borda arredondada */\n"
 "}")
         self.musicaSlider.setOrientation(QtCore.Qt.Horizontal)
         self.musicaSlider.setObjectName("musicaSlider")
         self.botaoEscolherPasta = QtWidgets.QPushButton(self.tab)
-        self.botaoEscolherPasta.setGeometry(QtCore.QRect(90, 390, 141, 32))
+        self.botaoEscolherPasta.setGeometry(QtCore.QRect(10, 390, 141, 32))
         font = QtGui.QFont()
         font.setFamily("Georgia")
         self.botaoEscolherPasta.setFont(font)
         self.botaoEscolherPasta.setStyleSheet("QPushButton {\n"
-"    background-color: #1E90FF;\n"
+"    background-color: #800080;\n"
 "    color: white; \n"
 "    border: none; \n"
 "    border-radius: 5px;\n"
@@ -126,12 +160,12 @@ class Ui_MainWindow(object):
 "}")
         self.botaoEscolherPasta.setObjectName("botaoEscolherPasta")
         self.botaoEscolher = QtWidgets.QPushButton(self.tab)
-        self.botaoEscolher.setGeometry(QtCore.QRect(90, 430, 141, 32))
+        self.botaoEscolher.setGeometry(QtCore.QRect(10, 430, 141, 32))
         font = QtGui.QFont()
         font.setFamily("Georgia")
         self.botaoEscolher.setFont(font)
         self.botaoEscolher.setStyleSheet("QPushButton {\n"
-"    background-color: #1E90FF;\n"
+"    background-color: #800080;\n"
 "    color: white; \n"
 "    border: none; \n"
 "    border-radius: 5px;\n"
@@ -185,29 +219,56 @@ class Ui_MainWindow(object):
         self.botaoAnterior.setIcon(icon3)
         self.botaoAnterior.setIconSize(QtCore.QSize(48, 48))
         self.botaoAnterior.setObjectName("botaoAnterior")
+        self.botaoEmbaralhar = QtWidgets.QPushButton(self.tab)
+        self.botaoEmbaralhar.setGeometry(QtCore.QRect(220, 410, 41, 31))
+        self.botaoEmbaralhar.setStyleSheet("QPushButton {\n"
+"    color: white; \n"
+"    border: none; \n"
+"    border-radius: 5px;\n"
+"    padding: 10px 20px;\n"
+"}")
+        self.botaoEmbaralhar.setText("")
+        icon4 = QtGui.QIcon()
+        icon4.addPixmap(QtGui.QPixmap("embaralhar.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.botaoEmbaralhar.setIcon(icon4)
+        self.botaoEmbaralhar.setIconSize(QtCore.QSize(64, 64))
+        self.botaoEmbaralhar.setObjectName("botaoEmbaralhar")
         self.tabWidget.addTab(self.tab, "")
         self.tab_2 = QtWidgets.QWidget()
         self.tab_2.setObjectName("tab_2")
         self.BarraDeProgresso = QtWidgets.QProgressBar(self.tab_2)
-        self.BarraDeProgresso.setGeometry(QtCore.QRect(10, 30, 231, 31))
+        self.BarraDeProgresso.setGeometry(QtCore.QRect(79, 40, 231, 31))
         font = QtGui.QFont()
         font.setFamily("Courier")
         self.BarraDeProgresso.setFont(font)
+        self.BarraDeProgresso.setStyleSheet("QProgressBar {\n"
+"    color: white;\n"
+"    text-align: center;\n"
+"    border: 1px solid #800080; /* Borda da barra de progresso */\n"
+"    border-radius: 5px; /* Borda arredondada da barra de progresso */\n"
+"    background: #800080; /* Cor de fundo da barra de progresso */\n"
+"}\n"
+"\n"
+"QProgressBar::chunk {\n"
+"    background: #9932CC; /* Cor do preenchimento da barra de progresso */\n"
+"}")
         self.BarraDeProgresso.setProperty("value", 100)
         self.BarraDeProgresso.setObjectName("BarraDeProgresso")
         self.progressoLabel = QtWidgets.QLabel(self.tab_2)
-        self.progressoLabel.setGeometry(QtCore.QRect(10, 10, 221, 20))
+        self.progressoLabel.setGeometry(QtCore.QRect(80, 20, 229, 20))
+        self.progressoLabel.setStyleSheet("color: white;\n"
+"background-color: #800080;")
         self.progressoLabel.setTextFormat(QtCore.Qt.AutoText)
         self.progressoLabel.setAlignment(QtCore.Qt.AlignCenter)
         self.progressoLabel.setObjectName("progressoLabel")
         self.botaoBaixar = QtWidgets.QPushButton(self.tab_2)
-        self.botaoBaixar.setGeometry(QtCore.QRect(0, 90, 111, 71))
+        self.botaoBaixar.setGeometry(QtCore.QRect(136, 90, 111, 71))
         self.botaoBaixar.setMaximumSize(QtCore.QSize(16777215, 1600000))
         font = QtGui.QFont()
         font.setFamily("Georgia")
         self.botaoBaixar.setFont(font)
         self.botaoBaixar.setStyleSheet("QPushButton {\n"
-"    background-color: #1E90FF;\n"
+"    background-color: #800080;\n"
 "    color: white; \n"
 "    border: none; \n"
 "    border-radius: 5px;\n"
@@ -220,12 +281,31 @@ class Ui_MainWindow(object):
         self.botaoBaixar.setObjectName("botaoBaixar")
         self.downloadList = QtWidgets.QListWidget(self.tab_2)
         self.downloadList.setGeometry(QtCore.QRect(410, 10, 421, 451))
+        self.downloadList.setStyleSheet("background-color: #800080;\n"
+"color: rgb(255, 255, 255)")
         self.downloadList.setObjectName("downloadList")
+        self.botaoDownloadFolder = QtWidgets.QPushButton(self.tab_2)
+        self.botaoDownloadFolder.setGeometry(QtCore.QRect(140, 180, 101, 81))
+        font = QtGui.QFont()
+        font.setFamily("Georgia")
+        self.botaoDownloadFolder.setFont(font)
+        self.botaoDownloadFolder.setStyleSheet("QPushButton {\n"
+"    background-color: #800080;\n"
+"    color: white; \n"
+"    border: none; \n"
+"    border-radius: 5px;\n"
+"    padding: 10px 20px;\n"
+"}\n"
+"\n"
+"QPushButton:hover {\n"
+"    background-color: #4169E1; \n"
+"}")
+        self.botaoDownloadFolder.setObjectName("botaoDownloadFolder")
         self.tabWidget.addTab(self.tab_2, "")
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -233,8 +313,10 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "TubeTunes"))
         self.musicaTocando.setText(_translate("MainWindow", "Carregando..."))
         self.botaoEscolherPasta.setText(_translate("MainWindow", "Escolher Pasta"))
-        self.botaoEscolher.setText(_translate("MainWindow", "Escolher Arquivo"))
+        self.botaoEscolher.setText(_translate("MainWindow", "Escolher Arquivos"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "Player"))
         self.progressoLabel.setText(_translate("MainWindow", "Progresso"))
         self.botaoBaixar.setText(_translate("MainWindow", "Baixar"))
+        self.botaoDownloadFolder.setText(_translate("MainWindow", "Escolher\n"
+"Pasta"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Downloader"))

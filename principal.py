@@ -1,9 +1,9 @@
 import pygame
-import threading
 import yt_dlp
 import os
 import json
-from logica import escolherMusica, escolherPasta
+import random
+from logica import escolherMusica, escolherPasta, escolherPastaDownload
 from PyQt5 import QtWidgets, QtCore
 from PyQt5 import QtGui
 from PyQt5.QtCore import *
@@ -11,9 +11,127 @@ from PyQt5.QtWidgets import *
 from designApp import Ui_MainWindow
 
 
-class MySignals(QObject):
+class sinaisMusicas(QObject):
     pronto_signal = pyqtSignal()
     musicasNaoCarregadasSignal = pyqtSignal(list)
+
+
+class DownloadThread(QThread):
+    progressoSignal = pyqtSignal(str)
+    updateDownloadSignal = pyqtSignal(int)
+    updateDownloadFolderSignal = pyqtSignal(str)
+
+    def __init__(self, downloadLista, parent=None):
+        super().__init__(parent)
+        self.downloadFolder = "./Músicas"
+        self.downloadLista = downloadLista
+
+    def run(self):
+        while self.downloadLista:
+            musica = self.downloadLista[0]
+            self.progressoSignal.emit(f"Pesquisando {musica}")
+
+            def progress_callback(status):
+                match status['status']:
+                    case 'downloading':
+                        self.progressoSignal.emit(f"Baixando {musica}")
+                        if 'downloaded_bytes' in status and 'total_bytes' in status:
+                            downloaded = status['downloaded_bytes']
+                            total = status['total_bytes']
+
+                            if total > 0:
+                                percentual = int((downloaded / total) * 100)
+                                self.progressoSignal.emit(
+                                    f"Baixando {musica} ({percentual}%)")
+
+                    case 'finished':
+                        self.progressoSignal.emit(f"Convertendo {musica}")
+                    case _:
+                        self.progressoSignal.emit(f"Processando {musica}")
+
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'default_search': 'ytsearch',
+                'progress_hooks': [(lambda status: progress_callback(status))],
+                'outtmpl': self.downloadFolder+'/%(title)s.%(ext)s',
+                'postprocessors': [
+                    {
+                        'key': 'FFmpegMetadata',
+                        'add_metadata': True
+                    },
+                    {
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': '192',
+                    },
+                ],
+            }
+
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info_dict = ydl.extract_info(musica, download=False)
+                if info_dict.get('entries'):
+                    if 'extractor' in info_dict and info_dict['extractor'] == 'youtube:playlist':
+                        self.progressoSignal.emit(
+                            f"Playlists não são suportadas: {musica}")
+                    else:
+                        musica = info_dict['entries'][0]['title']
+                        self.downloadLista[0] = musica
+                        self.updateDownloadSignal.emit(self)
+
+                webmNome = ydl.prepare_filename(info_dict)
+
+                ydl.download([musica])
+
+                if not os.path.exists(webmNome):
+                    self.progressoSignal.emit(f"{musica}.mp3 foi baixado!")
+                    self.downloadLista.remove(musica)
+                    self.updateDownloadSignal.emit(self)
+
+        self.progressoSignal.emit("Todas as músicas foram baixadas!")
+
+
+class CaixaDeDialogo(QDialog):
+    def __init__(self, title, message, parent=None):
+        super().__init__(parent)
+
+        # Defina o estilo da caixa de diálogo
+        estilo_caixa_de_dialogo = """
+        QDialog {
+            background-color: #800080;
+        }
+        QLabel {
+            color: white;
+        }
+        QLineEdit {
+            background-color: #444;
+            color: white;
+        }
+        QPushButton {
+            background-color: #007acc;
+            color: white;
+        }
+        QPushButton:hover {
+            background-color: #005faa;
+        }
+        """
+
+        self.setStyleSheet(estilo_caixa_de_dialogo)
+
+        # Crie os elementos da interface do usuário
+        self.setWindowTitle(title)
+        self.layout = QVBoxLayout()
+
+        self.label = QLabel(message)
+        self.input = QLineEdit()
+        self.button = QPushButton("OK")
+
+        self.button.clicked.connect(self.accept)
+
+        self.layout.addWidget(self.label)
+        self.layout.addWidget(self.input)
+        self.layout.addWidget(self.button)
+
+        self.setLayout(self.layout)
 
 
 class SuaJanelaPrincipal(QMainWindow):
@@ -23,24 +141,21 @@ class SuaJanelaPrincipal(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.signals = MySignals()
+        self.signals = sinaisMusicas()
 
         self.musicasNaoCarregadas = []
         self.signals.musicasNaoCarregadasSignal.connect(
             self.musicasNaoCarregadasHandler)
-        
-        self.progress_bars = {}
+
         self.downloadLista = []
-        self.baixando = False
 
         self.playlist = []
-        self.playlist_text = "Playlist vazia"
         self.ui.progressoLabel.setText("Progresso")
         self.indice_musica_atual = 0
         self.indexOriginal = 0
 
-        self.song_end = pygame.USEREVENT
-        pygame.mixer.music.set_endevent(self.song_end)
+        self.fimMusica = pygame.USEREVENT
+        pygame.mixer.music.set_endevent(self.fimMusica)
 
         self.ui.botaoTocar.clicked.connect(self.playMusic)
         self.ui.botaoEscolher.clicked.connect(self.chooseMusic)
@@ -48,6 +163,45 @@ class SuaJanelaPrincipal(QMainWindow):
         self.ui.botaoPular.clicked.connect(self.skipMusic)
         self.ui.botaoAnterior.clicked.connect(self.previousMusic)
         self.ui.botaoBaixar.clicked.connect(self.searchMusic)
+        self.ui.botaoDownloadFolder.clicked.connect(self.loadDownloadFolder)
+        self.ui.botaoEmbaralhar.clicked.connect(self.embaralharMusicas)
+
+        self.menuItens = QMenu(self)
+
+        estiloMenu = """
+        QMenu {
+            background-color: #800080;
+            color: white; 
+            border-radius: 5px;
+        }
+
+        QMenu::item {
+            padding: 5px 15px;
+        }
+
+        QMenu::item:selected {
+            background-color: #4169E1;
+        }
+        """
+        self.menuItens.setStyleSheet(estiloMenu)
+
+        renomearAcao = QAction("Renomear", self)
+        deletarAcao = QAction("Deletar", self)
+        self.menuItens.addAction(renomearAcao)
+        self.menuItens.addAction(deletarAcao)
+
+        self.ui.listWidget.setContextMenuPolicy(3)
+        self.ui.listWidget.customContextMenuRequested.connect(
+            self.mostrarMenuItens)
+
+        deletarAcao.triggered.connect(self.removerItem)
+        renomearAcao.triggered.connect(self.renomearItem)
+
+        self.download_thread = DownloadThread(
+            self.downloadLista)
+        self.download_thread.progressoSignal.connect(self.mostrarProgresso)
+        self.download_thread.updateDownloadSignal.connect(
+            self.updateDownloadList)
 
         self.ui.listWidget.itemClicked.connect(self.startMusicFromClick)
 
@@ -71,28 +225,66 @@ class SuaJanelaPrincipal(QMainWindow):
         self.ui.listWidget.dropEvent = self.customDropEvent
         self.ui.listWidget.itemPressed.connect(self.clicked)
 
+        self.ui.volumeSlider.valueChanged.connect(self.updateVolume)
+
         self.timerCaixaDeTexto = QtCore.QTimer(self)
         self.timerCaixaDeTexto.timeout.connect(
             lambda: self.musicasNaoCarregadasHandler(self.musicasNaoCarregadas))
         self.timerCaixaDeTexto.setSingleShot(True)
 
-        self.load_playlist()
-    
+        self.loadPlaylist()
+        self.loadFolders()
+
     def iniciarTimerFimDownload(self):
-            self.timer.start(5000)
+        self.timer.start(5000)
 
     def musicasNaoCarregadasHandler(self, musicasNaoCarregadas):
-        message = "As seguintes músicas não puderam ser carregadas:\n\n"
-        message += "\n".join(musicasNaoCarregadas)
+        msg = "As seguintes músicas não puderam ser carregadas:\n\n"
+        msg += "\n".join(musicasNaoCarregadas)
 
         msg_box = QMessageBox(self)
         msg_box.setIcon(QMessageBox.Warning)
         msg_box.setWindowTitle("Músicas não carregadas")
-        msg_box.setText(message)
+        msg_box.setText(msg)
         msg_box.exec_()
 
-    def save_playlist(self):
-        print(self.indice_musica_atual)
+    def renomearItem(self):
+        item = self.ui.listWidget.currentItem()
+        if item is not None:
+            row = self.ui.listWidget.row(item)
+            dialog = CaixaDeDialogo("Renomear", "Digite o novo nome")
+            if dialog.exec_() == QDialog.Accepted:
+                new_name = dialog.input.text()
+                if new_name:
+                    self.playlist[row]['nome_musica'] = new_name
+                    item.setText(new_name)
+
+        self.updateSlider()
+        self.updatePlaylistLabel()
+
+    def removerItem(self):
+        item = self.ui.listWidget.currentItem()
+        if item is not None:
+            row = self.ui.listWidget.row(item)
+            self.playlist.pop(row)
+            self.ui.listWidget.takeItem(row)
+            if row < self.indice_musica_atual:
+                self.indice_musica_atual -= 1
+        self.updatePlaylistLabel()
+        self.updateSlider()
+
+    def mostrarMenuItens(self, position):
+        self.ui.listWidget.clearFocus()
+        acao = self.menuItens.exec_(self.ui.listWidget.mapToGlobal(position))
+
+        if acao is None:
+            self.updatePlaylistLabel()
+
+    def updateVolume(self):
+        volume = self.ui.volumeSlider.value() / 100.0
+        pygame.mixer.music.set_volume(volume)
+
+    def savePlaylist(self):
         data = {
             "playlist": self.playlist,
             "indice_musica_atual": self.indice_musica_atual
@@ -101,7 +293,21 @@ class SuaJanelaPrincipal(QMainWindow):
         with open('playlist.json', 'w') as file:
             json.dump(data, file, indent=1)
 
-    def load_playlist(self):
+    def saveFolders(self):
+        data = {
+            "folders": {
+                "folderDownload": self.download_thread.downloadFolder
+            }
+        }
+
+        with open('folders.json', 'w') as file:
+            json.dump(data, file, indent=1)
+
+    def loadPlaylist(self):
+
+        volume = self.ui.volumeSlider.value() / 100.0
+        pygame.mixer.music.set_volume(volume)
+
         try:
             with open('playlist.json', 'r') as file:
                 data = json.load(file)
@@ -117,8 +323,6 @@ class SuaJanelaPrincipal(QMainWindow):
                         self.musicasNaoCarregadas.append(item['nome_musica'])
                 except Exception as e:
                     self.musicasNaoCarregadas.append(item['nome_musica'])
-                    print(
-                        f"Erro ao verificar a música '{item['nome_musica']}'")
 
             self.indice_musica_atual = data.get('indice_musica_atual', 0)
 
@@ -130,6 +334,24 @@ class SuaJanelaPrincipal(QMainWindow):
 
         except (FileNotFoundError, json.JSONDecodeError):
             return []
+
+    def loadFolders(self):
+        try:
+            with open('folders.json', 'r') as file:
+                data = json.load(file)
+
+            self.download_thread.downloadFolder = data['folders']['folderDownload']
+
+        except (FileNotFoundError, json.JSONDecodeError):
+            return []
+
+    def loadDownloadFolder(self):
+        self.download_thread.downloadFolder = escolherPastaDownload(
+            self.download_thread.downloadFolder)
+        self.saveFolders()
+
+    def mostrarProgresso(self, message):
+        self.ui.progressoLabel.setText(message)
 
     def clicked(self, item):
         self.indexOriginal = self.ui.listWidget.row(item)
@@ -143,9 +365,13 @@ class SuaJanelaPrincipal(QMainWindow):
                 self.playlist[self.indexOriginal])
             dropped_index = self.ui.listWidget.row(dropped_item)
 
+            if self.indice_musica_atual == original_index:
+                self.indice_musica_atual = dropped_index
+
             if dropped_index is not None and 0 <= dropped_index < len(self.playlist) and original_index != dropped_index:
                 self.playlist[original_index], self.playlist[dropped_index] = self.playlist[dropped_index], self.playlist[original_index]
-                self.updatePlaylistLabel()
+
+        self.updatePlaylistLabel()
 
     def updateUserSlider(self):
         if pygame.mixer.music.get_busy():
@@ -170,13 +396,9 @@ class SuaJanelaPrincipal(QMainWindow):
                     self.playlist[self.indice_musica_atual]['nome_musica'])
             except:
                 pass
-        
-        for i in range(self.ui.listWidget.count()):
-            item = self.ui.listWidget.item(i)
-            item.setSelected(i == self.indice_musica_atual)
 
         for event in pygame.event.get():
-            if event.type == self.song_end:
+            if event.type == self.fimMusica:
                 self.skipMusic()
 
     def playMusic(self):
@@ -246,9 +468,24 @@ class SuaJanelaPrincipal(QMainWindow):
                 item = self.ui.listWidget.item(i)
                 item.setSelected(i == self.indice_musica_atual)
 
+    def embaralharMusicas(self):
+        random.shuffle(self.playlist)
+        self.indice_musica_atual = 0
+        self.updatePlaylistLabel()
+
+        next_music_path = self.playlist[self.indice_musica_atual]['path']
+        pygame.mixer.music.load(next_music_path)
+        self.ui.musicaSlider.setValue(0)
+        self.ui.musicaSlider.setMaximum(int(pygame.mixer.Sound(
+            self.playlist[self.indice_musica_atual]['path']).get_length()))
+        self.ui.musicaTocando.setText(
+            self.playlist[self.indice_musica_atual]['nome_musica'])
+        pygame.mixer.music.play()
+
     def startMusicFromClick(self, item):
         self.ui.listWidget.clearFocus()
         index = self.ui.listWidget.row(item)
+
         if index < len(self.playlist):
             pygame.mixer.music.pause()
             self.indice_musica_atual = index
@@ -265,102 +502,63 @@ class SuaJanelaPrincipal(QMainWindow):
                 item = self.ui.listWidget.item(i)
                 item.setSelected(i == self.indice_musica_atual)
 
+    def updateDownloadList(self):
+        self.ui.downloadList.clear()
+        for musica in self.downloadLista:
+            if musica not in [self.ui.downloadList.item(i).text() for i in range(self.ui.downloadList.count())]:
+                self.ui.downloadList.addItem(musica)
+
     def updatePlaylistLabel(self):
         self.ui.listWidget.clear()
+
         for index, item in enumerate(self.playlist):
             music_name = item['nome_musica']
             self.ui.listWidget.addItem(f"{index + 1}. {music_name}")
+
         for i in range(self.ui.listWidget.count()):
             item = self.ui.listWidget.item(i)
             item.setSelected(i == self.indice_musica_atual)
 
     def downloadMusic(self):
-        while self.downloadLista:
-            musica = self.downloadLista[0]
-            self.ui.progressoLabel.setText(f"Pesquisando {musica}")
-
-            self.baixando = True
-
-            def progress_callback(status, termo):
-                match status['status']:
-                    case 'downloading':
-                        self.ui.progressoLabel.setText(f"Baixando {termo}")
-                        if 'downloaded_bytes' in status and 'total_bytes' in status:
-                            downloaded = status['downloaded_bytes']
-                            total = status['total_bytes']
-                            if total > 0:
-                                percentual = int((downloaded / total) * 100)
-                                self.ui.BarraDeProgresso.setValue(percentual)  
-                    case 'finished':
-                        self.ui.progressoLabel.setText(f"Convertendo {termo}")
-                    case _:
-                        self.ui.progressoLabel.setText(f"Processando {termo}")
-
-            ydl_opts = {
-                'format': 'bestaudio/best',
-                'default_search': "ytsearch",
-                'progress_hooks': [(lambda termo: lambda s: progress_callback(s, termo))(musica)],
-                'match-filter': 'is-video',
-                'outtmpl': '%(title)s.%(ext)s',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                }],
-            }
-
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info_dict = ydl.extract_info(musica, download=False)
-                ydl.download([musica])
-
-                webm_name = ydl.prepare_filename(info_dict)
-                nome_base, extensao = os.path.splitext(webm_name)
-
-                if not os.path.exists(webm_name):
-                    self.ui.progressoLabel.setText(f"{nome_base}.mp3 foi baixado!")
-                    self.ui.downloadList.takeItem(0)
-                    self.downloadLista.remove(musica)
-        
-        if self.downloadLista:
-            downloadThread = threading.Thread(target=self.downloadMusic)
-            downloadThread.start()
-            self.baixando = True
-
-        self.ui.progressoLabel.setText("Todas as músicas foram baixadas!")
-        self.baixando = False
-        self.signals.pronto_signal.emit()
-
+        if not self.download_thread.isRunning():
+            self.ui.progressoLabel.setText("Iniciando download...")
+            self.download_thread.start()
 
     def searchMusic(self):
-        termo_pesquisa, _ = QInputDialog.getText(
-            None, "Digite o termo de pesquisa", "Digite o nome da música ou artista:")
-        if termo_pesquisa:
-            self.downloadLista.append(termo_pesquisa)
-            self.ui.downloadList.addItem(termo_pesquisa)
-        
-            if self.downloadLista and self.baixando == False:
-                downloadThread = threading.Thread(target=self.downloadMusic)
-                downloadThread.start()
-                self.baixando = True
+        caixa = CaixaDeDialogo(
+            "Digite o termo de pesquisa", "Digite o nome ou o link:")
+
+        if caixa.exec_() == QDialog.Accepted:
+            termoPesquisa = caixa.input.text()
+            self.downloadLista.append(termoPesquisa)
+            self.updateDownloadList()
+            self.downloadMusic()
 
     def chooseMusic(self):
         self.playlist = escolherMusica(self.playlist)
         self.updatePlaylistLabel()
-        self.save_playlist()
-    
+        self.savePlaylist()
+
     def chooseMusicFromFolder(self):
         self.playlist = escolherPasta(self.playlist)
         self.updatePlaylistLabel()
-        self.save_playlist()
+        self.savePlaylist()
 
 
 if __name__ == '__main__':
     pygame.mixer.pre_init(44100, -16, 2, 2048)
     pygame.mixer.init()
     pygame.init()
+
     app = QtWidgets.QApplication([])
+
     window = SuaJanelaPrincipal()
     window.show()
-    app.aboutToQuit.connect(window.save_playlist)
+
+    app.aboutToQuit.connect(window.savePlaylist)
+    app.aboutToQuit.connect(window.saveFolders)
+
     app.exec()
+
+    window.download_thread.wait()
     pygame.quit()
